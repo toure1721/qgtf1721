@@ -1512,5 +1512,42 @@ setInterval(() => {
   document.addEventListener('click', function(){ setTimeout(mettreDansParametres, 300); });
 })();
 </script>
+ <script>
+// CACHET UNIQUEMENT DANS PARAMETRES - V7
+(function(){
+  function deplacer(){
+    var bar = document.getElementById('qgtf-cachet-bar');
+    if(!bar) bar = document.getElementById('qgtf-cachet-bar-parametres');
+    if(!bar) return;
+
+    // Par defaut on CACHE la barre
+    bar.style.display = 'none';
+
+    // On cherche la page Parametres
+    // C'est la page qui a un titre Parametres ET des champs comme Nom entreprise / Telephone
+    var toutes = document.querySelectorAll('div, section, main');
+    for(var i=0;i<toutes.length;i++){
+      var el = toutes[i];
+      if(el.offsetParent === null) continue; // page cachee, on ignore
+      var txt = el.innerText || '';
+      // Si c'est la page Parametres visible
+      if(txt.indexOf('Param') !== -1 && txt.length > 200 && txt.length < 5000){
+        // On verifie que c'est bien la page Parametres, pas le menu
+        if(txt.indexOf('Nom') !== -1 || txt.indexOf('Téléphone') !== -1 || txt.indexOf('Adresse') !== -1 || txt.indexOf('Entreprise') !== -1){
+          // On met la barre tout en haut de cette page
+          if(el.firstChild !== bar){
+            el.insertBefore(bar, el.firstChild);
+          }
+          bar.style.display = 'block';
+          return;
+        }
+      }
+    }
+    // Si on est sur Tableau de bord, Ventes, Stock... on laisse cache
+  }
+  setInterval(deplacer, 500);
+  document.addEventListener('click', function(){ setTimeout(deplacer, 300); });
+})();
+</script>
 </body>
 </html>
