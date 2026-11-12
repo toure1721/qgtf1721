@@ -1430,5 +1430,43 @@ setInterval(() => {
   document.head.appendChild(style);
 })();
 </script>
+ <script>
+// TUEUR ANCIEN CACHET SUR ECRAN
+(function(){
+  setInterval(function(){
+    // On cherche toutes les images de cachet
+    var imgs = document.querySelectorAll('img');
+    imgs.forEach(function(im){
+      var src = (im.src || '') + ' ' + (im.alt || '');
+      if(src.toLowerCase().indexOf('cachet')!==-1 || im.id.indexOf('cachet')!==-1){
+        // Si le cachet n'est PAS dans une facture, on le supprime
+        var dansFacture = im.closest('[id*=facture i], [class*=facture i], [id*=recu i], [class*=recu i]');
+        var style = window.getComputedStyle(im);
+        // Si il est en fixed / absolute sur l'ecran = c'est l'ancien, on le supprime
+        if(!dansFacture && (style.position==='fixed' || style.position==='absolute')){
+          im.remove();
+        }
+        // Si il est sur le tableau de bord, on le supprime aussi
+        if(!dansFacture && im.id !== 'qgtf-cachet-img'){
+          // On ne touche pas au V5, seulement a l'ancien qui flotte
+          if(style.position==='fixed') im.remove();
+        }
+      }
+    });
+    // On supprime aussi les vieilles divs de cachet qui flottent
+    document.querySelectorAll('[id*=cachet i]').forEach(function(el){
+      if(el.id==='qgtf-cachet-bar' || el.id==='qgtf-cachet-img') return;
+      var s = window.getComputedStyle(el);
+      if(s.position==='fixed') el.remove();
+    });
+  }, 500);
+
+  // On coupe aussi la vieille fonction qui recree le cachet
+  // Si l'ancien code essaie de le remettre, on l'empeche
+  var css = document.createElement('style');
+  css.innerHTML = 'img[src*="cachet"][style*="fixed"], img[src*="cachet"][style*="position:fixed"]{display:none !important;}';
+  document.head.appendChild(css);
+})();
+</script>
 </body>
 </html>
