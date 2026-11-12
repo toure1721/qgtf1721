@@ -1468,5 +1468,49 @@ setInterval(() => {
   document.head.appendChild(css);
 })();
 </script>
+ <script>
+// CACHET DANS PARAMETRES - V6
+(function(){
+  // On supprime l'ancienne barre en haut du logiciel
+  var oldBar = document.getElementById('qgtf-cachet-bar');
+  if(oldBar) oldBar.remove();
+
+  // On cree la nouvelle barre pour la page Parametres
+  var bar = document.createElement('div');
+  bar.id = 'qgtf-cachet-bar-parametres';
+  bar.innerHTML = '<b>CACHET POUR LA FACTURE :</b> ' +
+    '<button onclick="localStorage.setItem(\'qgtf_cachet\',\'paye\');location.reload();" style="padding:8px 12px;background:#dc2626;color:#fff;border:none;border-radius:6px;font-weight:bold;">PAYÉ</button> ' +
+    '<button onclick="localStorage.setItem(\'qgtf_cachet\',\'paye_livre\');location.reload();" style="padding:8px 12px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-weight:bold;">PAYÉ ET LIVRÉ</button> ' +
+    '<button onclick="localStorage.setItem(\'qgtf_cachet\',\'aucun\');location.reload();" style="padding:8px 12px;background:#64748b;color:#fff;border:none;border-radius:6px;font-weight:bold;">AUCUN</button>' +
+    '<div style="font-size:12px;margin-top:4px;">Choisi actuel : <b id="qgtf-choix-actuel"></b></div>';
+  bar.style.cssText = 'background:#fff;border:2px solid #dc2626;border-radius:10px;padding:12px;margin:10px 0;text-align:center;display:none;';
+
+  function mettreDansParametres(){
+    // On cherche la page Parametres
+    var pages = document.querySelectorAll('div, section, main');
+    for(var i=0;i<pages.length;i++){
+      var txt = (pages[i].innerText||'').substring(0,200);
+      // Si la page contient "Parametres" ou "Paramètres" et qu'elle est visible
+      if((txt.indexOf('Param')!==-1 || txt.indexOf('param')!==-1) && pages[i].offsetParent!==null){
+        // On verifie que c'est bien une grande section, pas un petit bouton
+        if(pages[i].offsetHeight>300){
+          // On met la barre tout en haut de la page Parametres
+          pages[i].insertBefore(bar, pages[i].firstChild);
+          bar.style.display='block';
+          var choix = localStorage.getItem('qgtf_cachet')||'aucun';
+          var el = document.getElementById('qgtf-choix-actuel');
+          if(el) el.textContent = choix;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // On essaie tout de suite, et a chaque clic sur un bouton du menu
+  setInterval(mettreDansParametres, 1000);
+  document.addEventListener('click', function(){ setTimeout(mettreDansParametres, 300); });
+})();
+</script>
 </body>
 </html>
