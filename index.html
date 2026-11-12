@@ -1313,4 +1313,74 @@ setInterval(() => {
   if (l && l !== base()) push(l);
 }, 3000);
 </script>
-</body></html>
+ <style>
+#cachet-box{position:fixed;right:18px;bottom:90px;z-index:9999;width:150px;opacity:0.85;pointer-events:none;display:none;transform:rotate(-12deg)}
+#cachet-box img{width:100%}
+@media print{ #cachet-box{position:absolute;right:40px;bottom:120px;width:180px;display:block !important} }
+.cachet-setting{border:2px solid #1e3a8a;border-radius:12px;padding:14px;margin:14px 0;background:#fff}
+.cachet-setting h3{margin:0 0 10px 0}
+.cachet-setting button{margin:4px;padding:10px 14px;border-radius:8px;border:2px solid #1e3a8a;background:#fff;font-weight:bold}
+.cachet-setting button.active{background:#1e3a8a;color:#fff}
+</style>
+
+<div id="cachet-box"><img id="cachet-img" src=""></div>
+
+<script>
+// CACHET QGTF 17.21 - ROUGE
+(function(){
+  var choix = localStorage.getItem('qgtf_cachet') || 'paye';
+  function appliquerCachet(){
+    var box = document.getElementById('cachet-box');
+    var img = document.getElementById('cachet-img');
+    if(!box) return;
+    if(choix === 'aucun'){ box.style.display='none'; return; }
+    if(choix === 'paye-et-livre'){ img.src='cachet-paye-et-livre.png'; }
+    else { img.src='cachet-paye.png'; }
+    // On affiche le cachet seulement si on est sur une facture / aperçu
+    var txt = document.body.innerText || '';
+    if(txt.includes('FACTURE') || txt.includes('Facture') || txt.includes('Total')){
+      box.style.display='block';
+    } else {
+      // Sur les autres pages, on le cache pour ne pas gêner
+      // mais on le laisse visible sur Paramètres pour tester
+      if(window.location.hash.includes('parametre') || txt.includes('Paramètres')){
+        box.style.display='block';
+      } else {
+        box.style.display='none';
+      }
+    }
+  }
+  function creerSection(){
+    // On cherche la page Paramètres
+    var titres = Array.from(document.querySelectorAll('*')).filter(function(e){ return e.textContent && e.textContent.trim()==='Sauvegarde'; });
+    if(titres.length===0) return;
+    if(document.getElementById('cachet-setting-bloc')) return;
+    var bloc = document.createElement('div');
+    bloc.id='cachet-setting-bloc';
+    bloc.className='cachet-setting';
+    bloc.innerHTML='<h3>Cachet - Rouge</h3><p>Choisis le cachet qui s\'affichera sur la facture :</p>'
+      +'<button data-c="paye">PAYÉ</button>'
+      +'<button data-c="paye-et-livre">PAYÉ ET LIVRÉ</button>'
+      +'<button data-c="aucun">Aucun cachet</button>'
+      +'<p id="cachet-msg" style="font-weight:bold"></p>';
+    // On met le bloc juste avant Sauvegarde
+    var parent = titres[0].closest('div');
+    if(parent && parent.parentNode){ parent.parentNode.insertBefore(bloc, parent); }
+    else { titres[0].parentNode.insertBefore(bloc, titres[0]); }
+    bloc.querySelectorAll('button').forEach(function(b){
+      if(b.dataset.c===choix) b.classList.add('active');
+      b.onclick=function(){
+        choix=b.dataset.c;
+        localStorage.setItem('qgtf_cachet', choix);
+        bloc.querySelectorAll('button').forEach(function(x){x.classList.remove('active')});
+        b.classList.add('active');
+        document.getElementById('cachet-msg').textContent='Enregistré : '+b.textContent;
+        appliquerCachet();
+      };
+    });
+  }
+  setInterval(function(){ creerSection(); appliquerCachet(); }, 1000);
+})();
+</script>
+</body>
+</html>
