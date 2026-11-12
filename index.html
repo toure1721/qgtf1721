@@ -1594,5 +1594,47 @@ setInterval(() => {
   setInterval(placerCachetDansCadre, 500);
 })();
 </script>
+ <style>
+/* ANTI-CLIGNOTEMENT V10 - on cache les vieilles images qui clignotent */
+img[src*="cachet" i], #qgtf-cachet-img { display:none !important; }
+#qgtf-cachet-texte { display:block !important; opacity:1 !important; }
+</style>
+<script>
+// ANTI-CLIGNOTEMENT V10 - un seul cachet, stable
+(function(){
+  // On tue les anciens intervalles qui font clignoter en cachant leurs images
+  // On ne cree le tampon texte qu'UNE SEULE FOIS
+  var dejaCree = false;
+  function placerStable(){
+    if(dejaCree) return;
+    var cadre = null;
+    document.querySelectorAll('div, section, main').forEach(function(el){
+      var txt = el.innerText || '';
+      if(txt.indexOf('FACTURE')!==-1 && txt.indexOf('TOTAL')!==-1 && txt.indexOf('Client')!==-1){
+        if(el.offsetHeight > 300 && (!cadre || el.offsetHeight < cadre.offsetHeight)) cadre = el;
+      }
+    });
+    if(!cadre) return;
+    if(cadre.querySelector('#qgtf-cachet-texte')){ dejaCree = true; return; }
+
+    var choix = localStorage.getItem('qgtf_cachet') || 'aucun';
+    if(choix === 'aucun') return;
+
+    var texte = choix === 'paye_livre' ? 'PAYÉ ET LIVRÉ' : 'PAYÉ';
+    var s = window.getComputedStyle(cadre);
+    if(s.position === 'static') cadre.style.position = 'relative';
+
+    var div = document.createElement('div');
+    div.id = 'qgtf-cachet-texte';
+    div.innerHTML = '<div style="font-size:22px;font-weight:900;">' + texte + '</div><div style="font-size:11px;font-weight:700;">12/11/2026</div>';
+    div.style.cssText = 'position:absolute !important; bottom:85px !important; right:30px !important; border:3px solid #dc2626 !important; color:#dc2626 !important; border-radius:8px !important; padding:8px 14px !important; text-align:center !important; transform:rotate(-15deg) !important; z-index:99 !important; background:transparent !important; pointer-events:none !important; font-family:Arial,sans-serif !important;';
+    cadre.appendChild(div);
+    dejaCree = true;
+  }
+  // On verifie toutes les 2 secondes, pas toutes les 0,5 sec, pour ne plus clignoter
+  setInterval(placerStable, 2000);
+  placerStable();
+})();
+</script>
 </body>
 </html>
