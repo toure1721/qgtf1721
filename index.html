@@ -1313,5 +1313,47 @@ setInterval(() => {
   if (l && l !== base()) push(l);
 }, 3000);
 </script>
+ <style>
+#cachet-box{position:fixed;right:18px;bottom:90px;z-index:9999;display:none;pointer-events:none}
+#cachet-box img{width:110px;opacity:.9}
+@media print{#cachet-box{position:absolute;right:40px;bottom:40px;display:block!important}}
+#cachet-setting{border:2px solid #1e3a8a;border-radius:12px;padding:12px;margin-top:12px}
+#cachet-setting h3{margin:0 0 10px}
+#cachet-setting button{margin:4px;padding:10px 14px;border:1px solid #ccc;border-radius:8px;background:#fff}
+#cachet-setting button.active{background:#1e3a8a;color:#fff}
+</style>
+<div id="cachet-box"><img id="cachet-img" src="" alt=""></div>
+<script>
+// CACHET V7 - PROPRE - 1 SEULE FOIS
+(function(){
+  var KEY='qgtf_cachet_v7';
+  var box=document.getElementById('cachet-box');
+  var img=document.getElementById('cachet-img');
+  function get(){ try{return localStorage.getItem(KEY)||'off'}catch(e){return 'off'} }
+  function apply(){
+    var v=get();
+    if(v==='off'){ box.style.display='none'; return; }
+    // Mets ici ton image de cachet si tu en as une :
+    // img.src = 'cachet.png';
+    box.style.display='block';
+  }
+  function creerSection(){
+    if(document.getElementById('cachet-setting')) return;
+    var els=[...document.querySelectorAll('h2,h3,div')].filter(e=>e.textContent.trim()==='Paramètres'||e.textContent.trim()==='Parametres');
+    var parent = els.length ? els[0].parentElement : document.body;
+    var div=document.createElement('div');
+    div.id='cachet-setting';
+    div.innerHTML='<h3>Cachet - Rouge</h3><button data-v="off">Désactivé</button><button data-v="on">Activé</button><p style="font-size:12px;opacity:.7">Choisis une fois, ça reste mémorisé.</p>';
+    div.querySelectorAll('button').forEach(function(b){
+      if(b.dataset.v===get()) b.classList.add('active');
+      b.onclick=function(){ try{localStorage.setItem(KEY,b.dataset.v)}catch(e){} div.querySelectorAll('button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); apply(); };
+    });
+    parent.appendChild(div);
+  }
+  document.addEventListener('DOMContentLoaded',function(){ creerSection(); apply(); });
+  // Si Paramètres s'ouvre plus tard, on réessaie 1 fois sans boucle
+  setTimeout(function(){ creerSection(); apply(); }, 1000);
+})();
+</script>
 </body>
 </html>
