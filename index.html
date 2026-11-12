@@ -1382,5 +1382,26 @@ setInterval(() => {
   setInterval(function(){ creerSection(); appliquerCachet(); }, 1000);
 })();
 </script>
+ <script>
+// CACHET V2
+(function(){
+  if(document.getElementById('qgtf-cachet-bar')) return;
+  var bar = document.createElement('div');
+  bar.id='qgtf-cachet-bar';
+  bar.style.cssText='position:fixed;left:10px;bottom:10px;z-index:99999;background:#fff;border:2px solid #c00;border-radius:10px;padding:8px;';
+  bar.innerHTML='<b style="color:#c00">CACHET :</b> '
+    +'<button onclick="localStorage.setItem(\'qgtf_cachet\',\'paye\');location.reload()" style="padding:8px;margin:2px;font-weight:bold">PAYÉ</button>'
+    +'<button onclick="localStorage.setItem(\'qgtf_cachet\',\'paye-et-livre\');location.reload()" style="padding:8px;margin:2px;font-weight:bold">PAYÉ ET LIVRÉ</button>'
+    +'<button onclick="localStorage.setItem(\'qgtf_cachet\',\'aucun\');location.reload()" style="padding:8px;margin:2px">AUCUN</button>';
+  document.body.appendChild(bar);
+  var choix = localStorage.getItem('qgtf_cachet') || 'paye';
+  if(choix!=='aucun'){
+    var img = document.createElement('img');
+    img.src = choix==='paye-et-livre' ? 'cachet-paye-et-livre.png' : 'cachet-paye.png';
+    img.style.cssText='position:fixed;right:15px;bottom:80px;width:150px;z-index:99998;opacity:0.9;transform:rotate(-12deg);pointer-events:none';
+    document.body.appendChild(img);
+  }
+})();
+</script>
 </body>
 </html>
