@@ -1549,5 +1549,50 @@ setInterval(() => {
   document.addEventListener('click', function(){ setTimeout(deplacer, 300); });
 })();
 </script>
+ <script>
+// CACHET DANS LE CADRE DE LA FACTURE - V8
+(function(){
+  function placerCachetDansCadre(){
+    // On supprime les anciens cachets qui sont en dehors
+    document.querySelectorAll('#qgtf-cachet-img').forEach(function(el){
+      // Si il n'est pas dans la facture, on l'enleve, on va le remettre dedans
+      if(!el.closest('[id*=facture i], [class*=facture i]')) el.remove();
+    });
+
+    // On cherche le cadre de la facture = la boite blanche qui contient FACTURE + TOTAL A PAYER
+    var candidats = document.querySelectorAll('div, section, main');
+    var cadre = null;
+    for(var i=0;i<candidats.length;i++){
+      var txt = candidats[i].innerText || '';
+      if(txt.indexOf('FACTURE')!==-1 && txt.indexOf('TOTAL')!==-1 && txt.indexOf('Client')!==-1){
+        // On prend le plus petit cadre qui contient tout ca
+        if(!cadre || candidats[i].offsetHeight < cadre.offsetHeight){
+          if(candidats[i].offsetHeight > 300) cadre = candidats[i];
+        }
+      }
+    }
+    if(!cadre) return;
+    if(cadre.querySelector('#qgtf-cachet-img')) return;
+
+    var choix = localStorage.getItem('qgtf_cachet') || 'aucun';
+    if(choix === 'aucun') return;
+
+    var src = choix === 'paye_livre' ? 'cachet-paye-livre.png' : 'cachet-paye.png';
+    // Si tu as un autre nom de fichier, dis le moi, je change
+
+    // On rend le cadre relatif pour que le cachet reste dedans
+    var styleCadre = window.getComputedStyle(cadre);
+    if(styleCadre.position === 'static') cadre.style.position = 'relative';
+
+    var img = document.createElement('img');
+    img.id = 'qgtf-cachet-img';
+    img.src = src;
+    img.alt = 'cachet';
+    img.style.cssText = 'position:absolute !important; bottom:80px !important; right:25px !important; width:150px !important; height:auto !important; opacity:0.85 !important; transform:rotate(-15deg) !important; z-index:99 !important; pointer-events:none !important;';
+    cadre.appendChild(img);
+  }
+  setInterval(placerCachetDansCadre, 500);
+})();
+</script>
 </body>
 </html>
