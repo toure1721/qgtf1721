@@ -1314,28 +1314,35 @@ setInterval(() => {
 }, 3000);
 </script>
  <style>
-#cachet-box{position:fixed;right:18px;bottom:90px;z-index:9999;display:none;pointer-events:none}
-#cachet-box img{width:110px;opacity:.9}
-@media print{#cachet-box{position:absolute;right:40px;bottom:40px;display:block!important}}
 #cachet-setting{border:2px solid #1e3a8a;border-radius:12px;padding:12px;margin-top:12px}
 #cachet-setting h3{margin:0 0 10px}
-#cachet-setting button{margin:4px;padding:10px 14px;border:1px solid #ccc;border-radius:8px;background:#fff}
-#cachet-setting button.active{background:#1e3a8a;color:#fff}
+#cachet-setting button{margin:4px;padding:10px 14px;border:1px solid #ccc;border-radius:8px;background:#fff!important;color:#111!important;font-weight:bold!important}
+#cachet-setting button.active{background:#1e3a8a!important;color:#fff!important}
+.cachet-rond{width:150px;height:150px;border:3px solid #cc0000;border-radius:50%;color:#cc0000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-weight:900;font-size:11px;line-height:1.2;transform:rotate(-12deg);background:rgba(255,255,255,.7);position:absolute;right:30px;bottom:20px;z-index:9999;pointer-events:none}
+.cachet-rond span{font-size:9px;font-weight:700}
+@media print{.cachet-rond{display:flex!important}}
 </style>
-<div id="cachet-box"><img id="cachet-img" src="" alt=""></div>
 <script>
-// CACHET V7 - PROPRE - 1 SEULE FOIS
+// CACHET V8 - TEXTE ROUGE - SUR FACTURE
 (function(){
-  var KEY='qgtf_cachet_v7';
-  var box=document.getElementById('cachet-box');
-  var img=document.getElementById('cachet-img');
+  var KEY='qgtf_cachet_v8';
   function get(){ try{return localStorage.getItem(KEY)||'off'}catch(e){return 'off'} }
-  function apply(){
-    var v=get();
-    if(v==='off'){ box.style.display='none'; return; }
-    // Mets ici ton image de cachet si tu en as une :
-    // img.src = 'cachet.png';
-    box.style.display='block';
+  function enlever(){
+    document.querySelectorAll('.cachet-rond').forEach(function(e){e.remove()});
+  }
+  function appliquer(){
+    enlever();
+    if(get()==='off') return;
+    // On cherche la facture / devis / bon
+    var cible = document.querySelector('#facture, .facture, #devis, .devis, #apercu, #preview, main') || document.body;
+    // Si la cible est body, on le met en fixed
+    var div=document.createElement('div');
+    div.className='cachet-rond';
+    div.innerHTML='QUINCAILLERIE<br>GÉNÉRALE<br>TOURE & FRÈRES<br><span>DAKAR - SENEGAL</span><span>★ ★ ★</span>';
+    if(cible===document.body){ div.style.position='fixed'; div.style.bottom='90px'; div.style.right='18px'; }
+    // Il faut que le parent soit en relative pour bien placer le cachet
+    if(cible.style) cible.style.position='relative';
+    cible.appendChild(div);
   }
   function creerSection(){
     if(document.getElementById('cachet-setting')) return;
@@ -1346,13 +1353,14 @@ setInterval(() => {
     div.innerHTML='<h3>Cachet - Rouge</h3><button data-v="off">Désactivé</button><button data-v="on">Activé</button><p style="font-size:12px;opacity:.7">Choisis une fois, ça reste mémorisé.</p>';
     div.querySelectorAll('button').forEach(function(b){
       if(b.dataset.v===get()) b.classList.add('active');
-      b.onclick=function(){ try{localStorage.setItem(KEY,b.dataset.v)}catch(e){} div.querySelectorAll('button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); apply(); };
+      b.onclick=function(){ try{localStorage.setItem(KEY,b.dataset.v)}catch(e){} div.querySelectorAll('button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); appliquer(); };
     });
     parent.appendChild(div);
   }
-  document.addEventListener('DOMContentLoaded',function(){ creerSection(); apply(); });
-  // Si Paramètres s'ouvre plus tard, on réessaie 1 fois sans boucle
-  setTimeout(function(){ creerSection(); apply(); }, 1000);
+  document.addEventListener('DOMContentLoaded',function(){ creerSection(); appliquer(); });
+  setTimeout(function(){ creerSection(); appliquer(); }, 1000);
+  // Quand tu changes de page / ouvres une facture, on remet le cachet
+  setInterval(function(){ if(get()==='on' && !document.querySelector('.cachet-rond')) appliquer(); }, 2000);
 })();
 </script>
 </body>
