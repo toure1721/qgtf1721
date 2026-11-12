@@ -1383,13 +1383,12 @@ setInterval(() => {
 })();
 </script>
 <script>
-// CACHET V4 - DANS LA FACTURE, PAS SUR L'ECRAN
+// CACHET V5 - SEULEMENT SUR FACTURE, JAMAIS SUR TABLEAU DE BORD
 (function(){
-  // 1. Enleve l'ancien cachet sur l'ecran s'il existe
   var old = document.getElementById('qgtf-cachet-bar');
   if(old) old.remove();
 
-  // 2. Petits boutons EN HAUT de la page, pas fixes sur l'ecran
+  // Boutons en haut, pas fixes
   var bar = document.createElement('div');
   bar.id='qgtf-cachet-bar';
   bar.style.cssText='background:#fff;border:2px solid #c00;border-radius:10px;padding:8px;margin:10px;text-align:center';
@@ -1402,27 +1401,30 @@ setInterval(() => {
   var choix = localStorage.getItem('qgtf_cachet') || 'paye';
   if(choix==='aucun') return;
 
-  // 3. Trouve la facture - on cherche le bloc qui contient le total ou FACTURE
-  var facture = null;
-  var candidats = document.querySelectorAll('[id*=facture i], [class*=facture i], [id*=print i], [class*=print i], [id*=recu i], [class*=recu i]');
-  if(candidats.length>0) facture = candidats[candidats.length-1];
+  function mettreCachet(){
+    // On enleve l'ancien cachet s'il existe
+    var ancien = document.getElementById('qgtf-cachet-img');
+    if(ancien) ancien.remove();
 
-  if(!facture){
-    var tous = document.querySelectorAll('div, section, main, article');
-    for(var i=tous.length-1;i>=0;i--){
-      if(tous[i].innerText && tous[i].innerText.indexOf('FACTURE')!==-1 && tous[i].innerText.length < 5000){ facture = tous[i]; break; }
-    }
+    // On cherche VRAIMENT une facture / recu / impression
+    // On ne prend JAMAIS le tableau de bord, ni le body
+    var facture = document.querySelector('[id*=facture i], [class*=facture i], [id*=recu i], [class*=recu i], [id*=print i], [class*=print i], [id*=invoice i]');
+    if(!facture) return; // Pas de facture ouverte = PAS de cachet. C'est ca qui corrige ton tableau de bord.
+
+    // Il faut que la facture soit visible
+    if(facture.offsetParent === null && getComputedStyle(facture).display === 'none') return;
+
+    var img = document.createElement('img');
+    img.id='qgtf-cachet-img';
+    img.src = choix==='paye-et-livre' ? 'cachet-paye-et-livre.png' : 'cachet-paye.png';
+    img.style.cssText='display:block;margin:20px 10px 10px auto;width:170px;transform:rotate(-12deg);opacity:0.9';
+    facture.appendChild(img);
   }
-  if(!facture) facture = document.body;
 
-  // 4. Le cachet est DANS la facture, pas en fixed, pas en absolute sur l'ecran
-  // Il se met en bas de la facture, a droite, et il s'imprime avec elle
-  var img = document.createElement('img');
-  img.src = choix==='paye-et-livre' ? 'cachet-paye-et-livre.png' : 'cachet-paye.png';
-  img.style.cssText='display:block;margin:20px 10px 10px auto;width:170px;transform:rotate(-12deg);opacity:0.9';
-  facture.appendChild(img);
+  // On essaie tout de suite, et a chaque fois que la page change (quand tu ouvres une facture)
+  mettreCachet();
+  setInterval(mettreCachet, 1000);
 
-  // 5. A l'impression : on cache les boutons, on garde le cachet
   var style = document.createElement('style');
   style.innerHTML='@media print{ #qgtf-cachet-bar{display:none !important;} }';
   document.head.appendChild(style);
