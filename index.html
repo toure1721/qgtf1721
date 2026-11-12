@@ -1383,7 +1383,8 @@ setInterval(() => {
 })();
 </script>
  <script>
-// CACHET V2
+<script>
+// CACHET V3 - DANS LA FACTURE
 (function(){
   if(document.getElementById('qgtf-cachet-bar')) return;
   var bar = document.createElement('div');
@@ -1394,13 +1395,30 @@ setInterval(() => {
     +'<button onclick="localStorage.setItem(\'qgtf_cachet\',\'paye-et-livre\');location.reload()" style="padding:8px;margin:2px;font-weight:bold">PAYÉ ET LIVRÉ</button>'
     +'<button onclick="localStorage.setItem(\'qgtf_cachet\',\'aucun\');location.reload()" style="padding:8px;margin:2px">AUCUN</button>';
   document.body.appendChild(bar);
+
   var choix = localStorage.getItem('qgtf_cachet') || 'paye';
-  if(choix!=='aucun'){
-    var img = document.createElement('img');
-    img.src = choix==='paye-et-livre' ? 'cachet-paye-et-livre.png' : 'cachet-paye.png';
-    img.style.cssText='position:fixed;right:15px;bottom:80px;width:150px;z-index:99998;opacity:0.9;transform:rotate(-12deg);pointer-events:none';
-    document.body.appendChild(img);
+  if(choix==='aucun') return;
+
+  // Trouve la facture
+  var facture = null;
+  var tous = document.querySelectorAll('div, section, table');
+  for(var i=0;i<tous.length;i++){
+    if(tous[i].innerText && tous[i].innerText.indexOf('FACTURE')!==-1){ facture = tous[i]; break; }
   }
+  if(!facture) facture = document.body;
+
+  // Met la facture en relative pour coller le cachet dedans
+  if(getComputedStyle(facture).position==='static') facture.style.position='relative';
+
+  var img = document.createElement('img');
+  img.src = choix==='paye-et-livre' ? 'cachet-paye-et-livre.png' : 'cachet-paye.png';
+  img.style.cssText='position:absolute;right:20px;bottom:20px;width:160px;z-index:999;opacity:0.9;transform:rotate(-12deg);pointer-events:none';
+  facture.appendChild(img);
+
+  // A l'impression : on cache les boutons, on garde le cachet
+  var style = document.createElement('style');
+  style.innerHTML='@media print{ #qgtf-cachet-bar{display:none !important;} }';
+  document.head.appendChild(style);
 })();
 </script>
 </body>
