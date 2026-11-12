@@ -1316,41 +1316,4 @@ setInterval(() => {
   if (l && l !== base()) push(l);
 }, 3000);
 </script>
- <!-- NOUVEAU CACHET - SANS BANDE - SANS QGTF -->
-<style>
-.cachet-new{width:230px;height:230px;border-radius:50%;border:4px solid #c00000;position:relative;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#c00000;font-family:Arial,sans-serif;flex-shrink:0}
-.cachet-new:before{content:"";position:absolute;inset:8px;border:1.5px solid #c00000;border-radius:50%}
-.cachet-new .ct-top{position:absolute;top:14px;left:0;right:0;font-size:13px;font-weight:900;letter-spacing:2.5px}
-.cachet-new .ct-bot{position:absolute;bottom:14px;left:0;right:0;font-size:13px;font-weight:900;letter-spacing:1px}
-.cachet-new .ct-main{font-size:44px;font-weight:900;line-height:1;letter-spacing:1px;margin-top:6px}
-.cachet-new .ct-main.small{font-size:32px;line-height:1.05}
-.cachet-new .ct-num{font-size:26px;font-weight:900;margin-top:8px}
-.cachet-new .ct-ville{font-size:14px;font-weight:900;letter-spacing:1px;margin-top:6px}
-</style>
-<script>
-function nouveauCachet(){
-  document.querySelectorAll('.ckb, .m-sg, .cachet, [class*="cachet"]').forEach(el=>{
-    if(el.dataset.newCachet) return;
-    let txt = el.innerText || "";
-    let isLivre = txt.includes("LIVR") || txt.includes("LIVRE");
-    let main = isLivre ? '<div class="ct-main small">PAYÉ<br>ET LIVRÉ</div>' : '<div class="ct-main">PAYÉ</div>';
-    el.innerHTML = '<div class="cachet-new"><div class="ct-top">QUINCAILLERIE GENERALE</div>'+main+'<div class="ct-num">17.21</div><div class="ct-ville">DAKAR • SENEGAL</div><div class="ct-bot">TOURÉ & FRÈRES</div></div>';
-    el.dataset.newCachet = "1";
-  });
-}
-setInterval(nouveauCachet, 800);
-nouveauCachet();
-</script>
- <!-- CORRECTION POSITION CACHET -->
-<style>
-.ckb, .m-sg{position:relative !important; display:flex !important; justify-content:flex-end !important; margin-top:-75px !important; margin-bottom:5px !important; background:transparent !important; border:none !important; min-height:0 !important; height:auto !important; padding:0 !important}
-.cachet-new{width:175px !important; height:175px !important; border-width:3px !important; transform:rotate(-8deg); opacity:0.92; margin-right:25px}
-.cachet-new:before{inset:6px !important}
-.cachet-new .ct-top{top:12px !important; font-size:10px !important; letter-spacing:1.2px !important}
-.cachet-new .ct-bot{bottom:11px !important; font-size:10px !important}
-.cachet-new .ct-main{font-size:33px !important; margin-top:4px !important}
-.cachet-new .ct-main.small{font-size:24px !important}
-.cachet-new .ct-num{font-size:20px !important; margin-top:5px !important}
-.cachet-new .ct-ville{font-size:11px !important; margin-top:4px !important}
-</style>
 </body></html>
