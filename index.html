@@ -624,7 +624,7 @@ bls:{t:'Bon de livraison',T:'Bons de livraison',p:'BL',tl:'Client',tc:'clients'}
 devis:{t:'Devis',T:'Devis',p:'DEV',tl:'Client',tc:'clients'},
 arrivages:{t:'Arrivage',T:'Arrivages',p:'ARR',tl:'Fournisseur',tc:'fournisseurs'}};
 const NAV=[['dash','Tableau de bord'],['_','Tiers'],['clients','Clients'],['fournisseurs','Fournisseurs'],['_','Stock'],['produits','Produits & stocks'],['arrivages','Arrivages'],['_','Ventes'],['vente','⚡ Vente rapide'],['depots','💵 Dépôt d’argent'],['devis','Devis'],['proformas','Factures proforma'],['factures','Factures'],['bls','Bons de livraison'],['bcs','Bons de commande'],['_','Finances'],['depenses','Dépenses'],['prets','Prêts & emprunts'],['rapports','Rapports'],['_','Administration'],['users','Utilisateurs'],['params','Paramètres']];
-let route='dash',RT='clients',R1='',R2='',draft=null;
+let route='dash',RT='vfact',R1='',R2='',draft=null;
 const tot=d=>d.lines.reduce((a,l)=>a+l.q*l.pu,0)*(1-(+d.rem||0)/100)*(1+(+S.cfg.tva||0)/100);
 const statut=f=>{const t=tot(f);return (f.paye||0)>=t-0.5?'Payée':f.paye>0?'Partielle':'Impayée'};
 (()=>{let ch=false;(S.arrivages||[]).forEach(d=>{if(d.paye===undefined){d.paye=Math.round(tot(d));ch=true}});if(ch)save()})();
@@ -950,20 +950,55 @@ main{padding:20px!important}
  const kp=[['Ventes du jour',fmt(vj)],['Ventes du mois',fmt(ca)],['Bénéfice brut du mois',fmt(ben)],['Dépenses du mois',fmt(dep)],['Créances clients',fmt(imp)],['Dettes fournisseurs',fmt(dette)],['Valeur du stock (achat)',fmt(val)],['Produits en alerte',low.length]].map(([a,b])=>`<div class="k${a=='Produits en alerte'&&low.length?' al':''}"><i>${ic[a]}</i><span>${a}</span><b>${b}</b></div>`).join('');
  return `<div class="dsh"><div class="hero">${mqh("t")}<div class="hl"><img src="${LOGO}" alt=""></div><div class="ht"><small>Tableau de bord</small><h1>${esc(S.cfg.nom)}</h1><em>Vente de Matériaux de Construction</em><u>EST. 17.21</u></div>${mqh("b")}</div><div class="kg">${kp}</div>${charts()}${panels}</div>`;
 }
+let RQ='';
+const RPG=[['Ventes',[['vfact','Ventes / factures'],['vcli','Ventes / clients'],['vprod','Ventes / produits'],['vjour','Ventes / jour'],['vmois','Ventes / mois']]],['Stock',[['sach','Stock / produits (achat)'],['sven','Stock / produits (vente)']]],['Achats',[['aprod','Achats / produits'],['dettes','Dettes fournisseurs']]],['Résultat',[['res','Résultat global']]]];
+function rpData(){
+ const inP=d=>(!R1||d>=R1)&&(!R2||d<=R2),F=S.factures.filter(f=>inP(f.date||'')),A=S.arrivages.filter(d=>inP(d.date||''));
+ const rm=f=>+f.rem||0,net=(f,l)=>l.q*l.pu*(1-rm(f)/100),cst=l=>l.q*(+l.pa||0);
+ const ca=f=>f.lines.reduce((a,l)=>a+net(f,l),0),co=f=>f.lines.reduce((a,l)=>a+cst(l),0);
+ const mg=(b,c)=>{const v=b+c;return v>0?b/v:null},MG=(bi,ci)=>s=>mg(s[bi],s[ci]);
+ const pn=id=>esc((S.produits.find(p=>p.id==id)||{}).nom||'—');
+ const grpF=kf=>{const m={};F.forEach(f=>{const k=kf(f),o=m[k]=m[k]||{n:0,t:0,p:0,c:0,b:0},c=co(f);o.n++;o.t+=tot(f);o.p+=(+f.paye||0);o.c+=c;o.b+=ca(f)-c});return Object.entries(m)};
+ const noteV='Bénéfice = ventes HT après remise − coût d’achat des produits vendus. Marge = bénéfice ÷ ventes HT.';
+ const byDate=(a,b)=>String(b.date||'').localeCompare(String(a.date||''))||(b.id-a.id);
+ let k=RT;if(!RPG.some(g=>g[1].some(t=>t[0]==k)))k=RT='vfact';
+ if(k=='vfact')return{search:1,note:noteV,cols:[['Facture','s'],['Date','s'],['Client','s'],['Total','m','sum'],['Payé','m','sum'],['Reste','r','sum'],['Coût d’achat','m','sum'],['Bénéfice','b','sum'],['Marge','p',MG(7,6)]],
+  rows:[...F].sort(byDate).map(f=>{const t=tot(f),p=+f.paye||0,c=co(f),b=ca(f)-c;return[esc(f.num),dfr(f.date),esc(nm('clients',f.tiers)),t,p,Math.max(0,t-p),c,b,mg(b,c)]})};
+ if(k=='vcli')return{search:1,note:noteV,cols:[['Client','s'],['Factures','n','sum'],['Total','m','sum'],['Payé','m','sum'],['Reste','r','sum'],['Coût d’achat','m','sum'],['Bénéfice','b','sum'],['Marge','p',MG(6,5)]],
+  rows:grpF(f=>f.tiers).sort((a,b)=>b[1].t-a[1].t).map(([i,o])=>[esc(nm('clients',i)),o.n,o.t,o.p,Math.max(0,o.t-o.p),o.c,o.b,mg(o.b,o.c)])};
+ if(k=='vprod'){const m={};F.forEach(f=>f.lines.forEach(l=>{const o=m[l.p]=m[l.p]||{q:0,v:0,c:0};o.q+=+l.q||0;o.v+=net(f,l);o.c+=cst(l)}));
+  return{search:1,note:noteV,cols:[['Produit','s'],['Qté vendue','n','sum'],['Ventes HT','m','sum'],['Coût d’achat','m','sum'],['Bénéfice','b','sum'],['Marge','p',MG(4,3)]],
+  rows:Object.entries(m).sort((a,b)=>b[1].v-a[1].v).map(([i,o])=>[pn(i),o.q,o.v,o.c,o.v-o.c,mg(o.v-o.c,o.c)])}}
+ if(k=='vjour'||k=='vmois'){const mo=k=='vmois';return{search:1,note:noteV,cols:[[mo?'Mois':'Date','s'],['Factures','n','sum'],['Total','m','sum'],['Coût d’achat','m','sum'],['Bénéfice','b','sum'],['Marge','p',MG(4,3)]],
+  rows:grpF(f=>mo?String(f.date||'').slice(0,7):(f.date||'')).sort((a,b)=>String(b[0]).localeCompare(String(a[0]))).map(([d,o])=>[mo?(d?d.slice(5)+'/'+d.slice(0,4):'—'):dfr(d),o.n,o.t,o.c,o.b,mg(o.b,o.c)])}}
+ const PS=[...S.produits].sort((a,b)=>String(a.nom).localeCompare(String(b.nom)));
+ if(k=='sach')return{search:1,note:'Stock actuel (la période ne s’applique pas). Bénéfice attendu = (prix de vente − prix d’achat) × stock.',cols:[['Produit','s'],['Réf.','s'],['Stock','n','sum'],['Prix d’achat','m'],['Valeur d’achat','m','sum'],['Bénéfice attendu','b','sum'],['Marge','p',MG(5,4)],['État','h']],
+  rows:PS.map(p=>{const st=+p.stock||0,pa=+p.pa||0,pv=+p.pv||0,va=st*pa,b=st*(pv-pa);return[esc(p.nom),esc(p.ref||''),st,pa,va,b,mg(b,va),st<=(p.seuil??10)?'<span class="bad">À réapprovisionner</span>':'<span class="ok">OK</span>']})};
+ if(k=='sven')return{search:1,note:'Stock actuel (la période ne s’applique pas). Bénéfice attendu = (prix de vente − prix d’achat) × stock.',cols:[['Produit','s'],['Réf.','s'],['Stock','n','sum'],['Prix de vente','m'],['Valeur de vente','m','sum'],['Coût d’achat','m','sum'],['Bénéfice attendu','b','sum'],['Marge','p',MG(6,5)]],
+  rows:PS.map(p=>{const st=+p.stock||0,pa=+p.pa||0,pv=+p.pv||0,c=st*pa;return[esc(p.nom),esc(p.ref||''),st,pv,st*pv,c,st*(pv-pa),mg(st*(pv-pa),c)]})};
+ if(k=='aprod'){const m={};A.forEach(d=>d.lines.forEach(l=>{const o=m[l.p]=m[l.p]||{q:0,m:0};o.q+=+l.q||0;o.m+=l.q*l.pu*(1-rm(d)/100)}));
+  return{search:1,note:'Bénéfice potentiel = valeur de vente de la quantité achetée (au prix de vente actuel) − montant acheté.',cols:[['Produit','s'],['Qté achetée','n','sum'],['Montant acheté','m','sum'],['Valeur de vente','m','sum'],['Bénéfice potentiel','b','sum'],['Marge','p',MG(4,2)]],
+  rows:Object.entries(m).sort((a,b)=>b[1].m-a[1].m).map(([i,o])=>{const pv=+(S.produits.find(p=>p.id==i)||{}).pv||0,v=o.q*pv;return[pn(i),o.q,o.m,v,v-o.m,mg(v-o.m,o.m)]})};}
+ if(k=='dettes')return{search:1,note:'',cols:[['Arrivage','s'],['Date','s'],['Fournisseur','s'],['Total','m','sum'],['Payé','m','sum'],['Reste','r','sum']],
+  rows:[...A].sort(byDate).map(d=>{const t=tot(d),p=+d.paye||0;return[esc(d.num),dfr(d.date),esc(nm('fournisseurs',d.tiers)),t,p,Math.max(0,t-p)]})};
+ const cv=F.reduce((a,f)=>a+ca(f),0),cc=F.reduce((a,f)=>a+co(f),0),dp=S.depenses.filter(d=>inP(d.date||'')).reduce((a,d)=>a+(+d.montant||0),0),b=cv-cc;
+ const stv=S.produits.reduce((a,p)=>a+(+p.stock||0)*(+p.pa||0),0),stb=S.produits.reduce((a,p)=>a+(+p.stock||0)*((+p.pv||0)-(+p.pa||0)),0);
+ return{search:0,note:noteV,cols:[['Indicateur','h'],['Montant','h']],rows:[['Nombre de factures',F.length],['Ventes HT (après remise)',fmt(cv)],['Coût d’achat des marchandises vendues',fmt(cc)],['<b>Bénéfice brut</b>',`<b class="${b<0?'bad':'ok'}">${fmt(b)}</b>`],['Marge brute',mg(b,cc)==null?'—':Math.round(mg(b,cc)*100)+' %'],['Dépenses',fmt(dp)],['<b>Résultat net (bénéfice brut − dépenses)</b>',`<b class="${b-dp<0?'bad':'ok'}">${fmt(b-dp)}</b>`],['Stock actuel : valeur d’achat',fmt(stv)],['Stock actuel : bénéfice attendu',fmt(stb)]]};
+}
+function rpHtml(){
+ const d=rpData(),c=d.cols,q=RQ,isN=t=>'nmbpr'.includes(t);
+ const rows=d.rows.filter(r=>!q||!d.search||qm(r.filter(x=>typeof x=='string').join(' ').replace(/<[^>]*>/g,' '),q));
+ const s=c.map((x,i)=>isN(x[1])?rows.reduce((a,r)=>a+(+r[i]||0),0):0);
+ const fc=(t,v)=>t=='n'?N(v):t=='m'?fmt(v):t=='b'?`<span class="${v<0?'bad':'ok'}">${fmt(v)}</span>`:t=='r'?`<span class="${v>0.5?'bad':'ok'}">${fmt(v)}</span>`:t=='p'?(v==null?'—':Math.round(v*100)+' %'):v;
+ const lead=c.findIndex(x=>x[2]);let foot='';
+ if(lead>0&&rows.length)foot=`<tfoot><tr><td colspan="${lead}">TOTAL (${rows.length})</td>${c.slice(lead).map((x,j)=>{const i=lead+j,f=x[2];return`<td>${f?fc(x[1],f=='sum'?s[i]:f(s)):''}</td>`}).join('')}</tr></tfoot>`;
+ return`<div class="tw"><table><thead><tr>${c.map(x=>`<th>${x[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((v,i)=>`<td>${fc(c[i][1],v)}</td>`).join('')}</tr>`).join('')||`<tr><td colspan="${c.length}">Aucune donnée.</td></tr>`}</tbody>${foot}</table></div>`;
+}
+const rpBody=()=>{$('#rpt').innerHTML=rpHtml()};
 function rapports(){
- const T=[['clients','Ventes / clients'],['produits','Ventes / produits'],['stock','Stocks / produits'],['bprod','Bénéfices / produits'],['bfact','Bénéfices / factures'],['dettes','Dettes fournisseurs'],['res','Résultat global']];
- const F=S.factures.filter(f=>(!R1||f.date>=R1)&&(!R2||f.date<=R2)),net=(f,l)=>l.q*l.pu*(1-f.rem/100);
- const grp={};F.forEach(f=>f.lines.forEach(l=>{const o=grp[l.p]=grp[l.p]||{q:0,ca:0,co:0};o.q+=l.q;o.ca+=net(f,l);o.co+=l.q*(l.pa||0)}));
- const pn=id=>esc((S.produits.find(p=>p.id==id)||{}).nom||'—');let h,r,ft='';const sm=a=>a.reduce((x,y)=>x+y,0),T$=c=>`<td>${c}</td>`,FT=(lab,sp,...c)=>`<tr><td colspan="${sp}">${lab}</td>${c.map(T$).join('')}</tr>`;
- if(RT=='clients'){const m={};F.forEach(f=>{const o=m[f.tiers]=m[f.tiers]||{n:0,t:0,p:0};o.n++;o.t+=tot(f);o.p+=f.paye||0});h=['Client','Factures','Total','Payé','Reste'];const V=Object.values(m);r=Object.entries(m).map(([i,o])=>[esc(nm('clients',i)),o.n,fmt(o.t),fmt(o.p),fmt(o.t-o.p)]);ft=FT('TOTAL',1,sm(V.map(o=>o.n)),fmt(sm(V.map(o=>o.t))),fmt(sm(V.map(o=>o.p))),fmt(sm(V.map(o=>o.t-o.p))))}
- else if(RT=='produits'){h=['Produit','Qté vendue','Chiffre d’affaires'];r=Object.entries(grp).map(([i,o])=>[pn(i),o.q,fmt(o.ca)]);const V=Object.values(grp);ft=FT('TOTAL',1,sm(V.map(o=>o.q)),fmt(sm(V.map(o=>o.ca))))}
- else if(RT=='stock'){h=['Produit','Stock','Valeur achat','Valeur vente','État'];r=S.produits.map(p=>[esc(p.nom),p.stock,fmt(p.stock*p.pa),fmt(p.stock*p.pv),p.stock<=p.seuil?'<span class="bad">À réapprovisionner</span>':'<span class="ok">OK</span>']);ft=FT('TOTAL',1,sm(S.produits.map(p=>p.stock)),fmt(sm(S.produits.map(p=>p.stock*p.pa))),fmt(sm(S.produits.map(p=>p.stock*p.pv))),'')}
- else if(RT=='bprod'){h=['Produit','Qté','CA','Coût','Bénéfice','Marge'];r=Object.entries(grp).map(([i,o])=>[pn(i),o.q,fmt(o.ca),fmt(o.co),fmt(o.ca-o.co),o.ca?Math.round((o.ca-o.co)/o.ca*100)+' %':'—']);const V=Object.values(grp),CA=sm(V.map(o=>o.ca)),CO=sm(V.map(o=>o.co));ft=FT('TOTAL',1,sm(V.map(o=>o.q)),fmt(CA),fmt(CO),fmt(CA-CO),CA?Math.round((CA-CO)/CA*100)+' %':'—')}
- else if(RT=='bfact'){h=['Facture','Date','Client','CA','Coût','Bénéfice'];r=F.map(f=>{const ca=f.lines.reduce((a,l)=>a+net(f,l),0),co=f.lines.reduce((a,l)=>a+l.q*(l.pa||0),0);return [f.num,f.date,esc(nm('clients',f.tiers)),fmt(ca),fmt(co),fmt(ca-co)]});const CA=sm(F.map(f=>f.lines.reduce((a,l)=>a+net(f,l),0))),CO=sm(F.map(f=>f.lines.reduce((a,l)=>a+l.q*(l.pa||0),0)));ft=FT('TOTAL ('+F.length+' factures)',3,fmt(CA),fmt(CO),fmt(CA-CO))}
- else if(RT=='dettes'){const A=S.arrivages.filter(d=>(!R1||d.date>=R1)&&(!R2||d.date<=R2)),rs=d=>Math.max(0,tot(d)-(d.paye||0));h=['Arrivage','Date','Fournisseur','Total','Payé','Reste'];r=A.map(d=>[d.num,d.date,esc(nm('fournisseurs',d.tiers)),fmt(tot(d)),fmt(d.paye||0),'<span class="'+(rs(d)>0.5?'bad':'ok')+'">'+fmt(rs(d))+'</span>']);ft=FT('TOTAL ('+A.length+')',3,fmt(sm(A.map(d=>tot(d)))),fmt(sm(A.map(d=>d.paye||0))),fmt(sm(A.map(rs))))}
- else{const ca=F.reduce((a,f)=>a+f.lines.reduce((b,l)=>b+net(f,l),0),0),co=F.reduce((a,f)=>a+f.lines.reduce((b,l)=>b+l.q*(l.pa||0),0),0),dp=S.depenses.filter(d=>(!R1||d.date>=R1)&&(!R2||d.date<=R2)).reduce((a,d)=>a+d.montant,0);
-  h=['Indicateur','Montant'];r=[['Chiffre d’affaires',fmt(ca)],['Coût des marchandises vendues',fmt(co)],['Bénéfice brut',fmt(ca-co)],['Dépenses',fmt(dp)],['<b>Résultat net</b>',`<b class="${ca-co-dp<0?'bad':'ok'}">${fmt(ca-co-dp)}</b>`]]}
- return `<div class="po"><img src="${LOGO}" alt="" style="width:80px"><b>${esc(S.cfg.nom)}</b></div><h2>Rapports</h2><div class="tabs">${T.map(([k,l])=>`<button class="${k==RT?'on':''}" onclick="RT='${k}';render()">${l}</button>`).join('')}</div><div class="bar"><label>Du <input type="date" value="${R1}" onchange="R1=this.value;render()"></label><label>Au <input type="date" value="${R2}" onchange="R2=this.value;render()"></label>${['clients','produits','stock','bprod','bfact','dettes'].includes(RT)?`<input class="noprint" placeholder="🔍 Rechercher…" oninput="flt(this.value)" style="align-self:end;max-width:240px">`:''}<button class="noprint" onclick="window.print()" style="align-self:end">Imprimer</button></div>`+tbl(h,r,'tb',ft);
+ const d=rpData(),per=(R1||R2)?` Période : ${R1?dfr(R1):'début'} → ${R2?dfr(R2):'aujourd’hui'}.`:'';
+ const tabs=RPG.map(([g,l])=>`<div class="tabs"><span style="align-self:center;font-weight:800;color:var(--mu);min-width:64px">${g}</span>${l.map(([k,t])=>`<button class="${k==RT?'on':''}" onclick="RT='${k}';RQ='';render()">${t}</button>`).join('')}</div>`).join('');
+ return `<div class="po"><img src="${LOGO}" alt="" style="width:80px"><b>${esc(S.cfg.nom)}</b></div><h2>Rapports</h2>${tabs}<div class="bar"><label>Du <input type="date" value="${R1}" onchange="R1=this.value;render()"></label><label>Au <input type="date" value="${R2}" onchange="R2=this.value;render()"></label>${d.search?`<input class="noprint" id="rq" placeholder="🔍 Rechercher…" value="${esc(RQ)}" oninput="RQ=this.value;rpBody()" style="align-self:end;max-width:240px">`:''}<button class="noprint" onclick="window.print()" style="align-self:end">Imprimer</button></div>${(d.note||per)?`<p style="color:var(--mu);font-size:12.5px;margin:6px 0">${d.note}${per}</p>`:''}<div id="rpt">${rpHtml()}</div>`;
 }
 function params(){
  const c=S.cfg;
