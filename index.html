@@ -854,6 +854,7 @@ function viewDoc(k,id){
  <div class="m-bx"><small>Document</small>${f?'<div>Paiement : '+esc(d.mode||'Espèces')+'</div>':''}${d.ref?'<div>Issue de : '+esc(d.ref)+'</div>':''}<div>Établi par : ${esc(par)}</div><div>Date : ${dl}</div></div></div>
  <div class="m-tw"><table class="m-tb"><colgroup>${cg}</colgroup><thead><tr><th class="c">N°</th><th>Réf</th><th class="c">Désignation</th><th class="r">Qté</th>${noPrice?'':'<th class="r">P.U.</th><th class="r">Montant</th>'}</tr></thead><tbody>${rows}${fill}</tbody></table></div>
  ${noPrice?'':`<div class="m-bt"><div class="m-wd"><small>Arrêté${fem?'e':''} ${fem?'la':'le'} présent${fem?'e':''} ${D.t.toLowerCase()} à la somme de</small><div class="m-lt">${lettres(t)} FCFA.</div></div><table class="m-tot">${tr.join('')}</table></div>`}
+ ${d.dep?dFacBlock(d):''}
  <div class="m-sg"><div><span>Établi par</span><i></i></div><div><span>Bon pour accord — ${esc(D.tl)}</span><i></i></div></div>
  <div class="m-ft"><div class="m-f1"><div class="m-fa"><div>${adrL}</div><div class="m-th">Merci et à bientôt - TOURE &amp; FRÈRES</div></div><div class="m-f2">${D.t} ${esc(d.num)} · ${dfr(d.date)}</div></div></div>
  <div class="mst b"></div>${ckHtml(d)}</div>`;
@@ -1159,6 +1160,14 @@ html,body{margin:0;padding:0;background:#fff}
 .m-tb .m-fl td{border:0!important}
 .dense .m-tb tbody tr:not(.m-fl) td{font-size:14px;padding:3px 7px}
 .m-tot{width:48%}
+.m-dp{flex:none;margin-top:12px;border:2px solid var(--c);border-radius:6px;overflow:hidden}
+.m-dp .h{display:block;background:var(--c);color:#fff;padding:3px 10px;font-size:12px;font-weight:900;text-transform:uppercase}
+.m-dp table{width:100%;border-collapse:collapse}
+.m-dp th,.m-dp td{padding:2px 8px;font-size:12px;font-weight:800;text-align:left;border-bottom:1px solid var(--ln)}
+.m-dp th{color:var(--c);font-weight:900}
+.m-dp .r{text-align:right;font-variant-numeric:tabular-nums}
+.m-dp tr.cur td{background:#e8effc;font-weight:900}
+.m-dp .f{display:flex;justify-content:space-between;gap:10px;padding:3px 10px;font-size:12px;font-weight:900;color:var(--c)}
 .m-tot td{font-size:15px}
 .m-sg span{font-size:16px}
 .m-sg i{height:34px;border-bottom-width:3px}
@@ -1470,6 +1479,23 @@ async function dRefund(id){
  if(m>s+0.5)return alert('Le montant dépasse le solde disponible ('+fmt(s)+').');
  S.depots.push({id:nid(),date:today(),tiers:id,type:'retrait',h:nowH(),montant:m,mode:'Espèces',note:'Remboursement'});
  save();render();toast('Remboursement enregistré ✓');
+}
+
+/* Petit tableau du compte dépôt sur la facture payée avec le solde */
+function dEvAsc(id){
+ const ev=[];
+ S.depots.filter(x=>x.tiers==id).forEach(x=>ev.push({d:x.date,h:x.h,i:x.id,lab:(x.type=='retrait'?'Remboursement':'Dépôt')+(x.mode?' ('+x.mode+')':''),a:(x.type=='retrait'?-1:1)*(+x.montant||0)}));
+ S.factures.filter(f=>f.dep&&f.tiers==id).forEach(f=>ev.push({d:f.date,h:f.h,i:f.id,f:1,lab:'Achat — facture '+f.num,a:-(+f.depMt||0)}));
+ ev.sort((a,b)=>String(a.d).localeCompare(String(b.d))||a.i-b.i);
+ let run=0;ev.forEach(e=>{run+=e.a;e.s=run});return ev;
+}
+function dFacBlock(f){
+ try{
+  const all=dEvAsc(f.tiers),k=all.findIndex(e=>e.f&&e.i==f.id);if(k<0)return '';
+  const upto=all.slice(0,k+1),shown=upto.slice(-6),hid=upto.length-shown.length;
+  const rows=shown.map(e=>`<tr class="${e.f&&e.i==f.id?'cur':''}"><td>${dfr(e.d)}${e.h?' '+e.h:''}</td><td>${esc(e.lab)}</td><td class="r">${e.a<0?'−':'+'} ${N(Math.abs(e.a))}</td><td class="r">${N(e.s)}</td></tr>`).join('');
+  return `<div class="m-dp"><b class="h">Historique du compte dépôt d’argent</b><table><thead><tr><th>Date</th><th>Opération</th><th class="r">Montant (FCFA)</th><th class="r">Solde (FCFA)</th></tr></thead><tbody>${rows}</tbody></table><div class="f"><span>${hid>0?hid+' opération'+(hid>1?'s':'')+' antérieure'+(hid>1?'s':'')+' non affichée'+(hid>1?'s':''):''}</span><span>Solde restant après cet achat : ${FCFA(upto[upto.length-1].s)}</span></div></div>`;
+ }catch(e){return ''}
 }
 async function dDelAll(id){
  const c=S.clients.find(x=>x.id==id);if(!c)return;
