@@ -1586,11 +1586,13 @@ setInterval(() => {
   const l = loc();
   if (l && l !== base()) push(l);
 }, 3000);
+<script>
+  function cacherReset(){
+    document.querySelectorAll('button').forEach(b => {
+      if(b.textContent.includes('Réinitialiser')) b.style.display = 'none';
+    });
+  }
+  cacherReset();
+  setInterval(cacherReset, 500);
 </script>
- <script>
-  document.querySelectorAll('button').forEach(b => {
-    if(b.textContent.includes('Réinitialiser')) b.style.display = 'none';
-  });
-</script>
-</body>
 </body></html>
